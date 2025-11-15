@@ -1,0 +1,12 @@
+:root{
+  font-family: Inter, Roboto, Arial, sans-serif;
+}
+body{ margin: 0; padding: 16px; background:#f6f8fa }
+.app{ max-width:900px; margin:0 auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,0.06)}
+header h1{ margin:0 0 8px 0 }
+section{ margin:12px 0 }
+table{ width:100%; border-collapse:collapse }
+th, td{ text-align:left; padding:6px; border-bottom:1px solid #eee }
+input[type="text"], input[type="number"], textarea{ padding:6px; border:1px solid #ccc; border-radius:4px }
+button{ padding:6px 10px; margin-left:6px }
+.controls label{ display:inline-block; margin-right:12px }
