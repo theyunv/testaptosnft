@@ -1,5 +1,5 @@
 import React from 'react'
-import NFTLottery from './components/NFTLottery'
+import LotteryPage from "./components/LotteryPage"
 
 export default function App() {
   return (
@@ -9,7 +9,7 @@ export default function App() {
         <p>功能：展示 NFT 总数 / 录入 NFT 地址 / 启动抽奖</p>
       </header>
       <main>
-        <NFTLottery />
+        <LotteryPage />
       </main>
     </div>
   )

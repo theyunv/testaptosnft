@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {Aptos, AptosConfig, Ed25519Account, Ed25519PrivateKey, Network} from "@aptos-labs/ts-sdk"
+import { i } from "@aptos-labs/ts-sdk/dist/common/account-DefhsHe3";
 
 type NFTRow = { id: number; address: string };
 
@@ -13,6 +14,7 @@ export default function LotteryPage() {
   const [raffleCount, setRaffleCount] = useState<number>(1);
   const [winnerCount, setWinnerCount] = useState<number>(1);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [participantsText, setParticipantsText] = useState<string>("");
 
   async function get_(address: string, index: string) {
     return await aptosClient.view({
@@ -27,54 +29,57 @@ export default function LotteryPage() {
     })
   }
 
+  async function submitAndLog(txn: any) {
+    try {
+      const rep = await aptosClient.transaction.submit.simple({
+        transaction: txn,
+        senderAuthenticator: account.signTransactionWithAuthenticator(txn)
+      });
+      console.log("tx hash:", rep.hash);
+
+      await aptosClient.waitForTransaction({transactionHash: rep.hash});
+      return rep;
+    } catch (e) {
+      console.error('submit failed', e);
+      throw e;
+    }
+  }
+
   async function create_lottery_activity() {
-    let txn = await aptosClient.transaction.build.simple({
+    const txn = await aptosClient.transaction.build.simple({
       sender: account.accountAddress,
       data: {
         function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::create_lottery_activity",
         typeArguments: [],
-        functionArguments: [
-          "test",
-          "测试",
-          "1"
-        ]
+        // title, description, total_winners
+        functionArguments: ["frontend-created", "created by frontend", "1"]
       }
     });
+    return await submitAndLog(txn);
   }
-      async function start_lottery() {
-    let txn = await aptosClient.transaction.build.simple({
-      sender: account.accountAddress,
-      data: {
-        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::start_lottery",
-        typeArguments: [],
-        functionArguments: [
-          "1"
-        ]
-      }
-    });
 
-    async function join_lottery_activity(address: string) {
-    let txn = await aptosClient.transaction.build.simple({
+  async function join_lottery_activity() {
+    const txn = await aptosClient.transaction.build.simple({
       sender: account.accountAddress,
       data: {
         function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::join_lottery_activity",
         typeArguments: [],
-        functionArguments: [
-          address,
-          "1"
-        ]
+        functionArguments: [account.accountAddress, "1"]
       }
-      });
-    }
+    });
+    return await submitAndLog(txn);
+  }
 
-    let rep = await aptosClient.transaction.submit.simple(
-      {
-        transaction: txn,
-        senderAuthenticator: account.signTransactionWithAuthenticator(txn)
+  async function start_lottery(index: number) {
+    const txn = await aptosClient.transaction.build.simple({
+      sender: account.accountAddress,
+      data: {
+        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::start_lottery",
+        typeArguments: [],
+        functionArguments: [index.toString()]
       }
-    );
-
-    console.log("tx hash:", rep.hash);
+    });
+    return await submitAndLog(txn);
   }
 
   const totalNFTs = rows.filter((r) => r.address.trim() !== "").length;
@@ -92,8 +97,26 @@ export default function LotteryPage() {
     setRows((s) => s.filter((r) => r.id !== id));
   }
 
-  function handleCreateLottery() {
+  async function handleCreateLottery(index:number) {
     setLastResult(null);
+
+    await create_lottery_activity();
+
+    await join_lottery_activity();
+
+    await start_lottery(index);
+
+    //delay
+    setTimeout(async () => {
+      
+           try {
+    const view = await get_(String(account.accountAddress), raffleCount.toString());
+    setLastResult((s) => (s || '') + `\nView result: ${JSON.stringify(view)}`);
+  } catch (e) {
+    setLastResult((s) => (s || '') + `\nView failed: ${String(e)}`);
+  }
+      },3000);
+    return
     // validation
     if (raffleCount <= 0) {
       setLastResult("抽奖 NFT 总数必须大于 0。");
@@ -138,6 +161,41 @@ export default function LotteryPage() {
     };
 
     setLastResult(JSON.stringify(payload, null, 2));
+
+    // On-chain sequence (demo): create activity, add participants, add reward NFTs, start lottery, then read winners.
+    (async () => {
+      try {
+        setLastResult((s) => (s ? s + '\n\n--- chain ops ---\n' : '') + 'Creating activity...');
+        
+
+        // parse participants from participantsText (one per line or comma/semicolon separated)
+        const participants = participantsText
+          .split(/\s*[\n,;]\s*/)
+          .map((s) => s.trim())
+          .filter((s) => s !== '');
+
+        for (const p of participants) {
+          setLastResult((s) => (s || '') + `\nJoining participant ${p} ...`);
+          
+        }
+
+        // add reward NFTs
+        const validAddrs = rows.map((r) => r.address.trim()).filter((a) => a !== '');
+        for (const nft of validAddrs) {
+          setLastResult((s) => (s || '') + `\nAdding reward NFT ${nft} ...`);
+          await add_reward_nft('1', nft);
+        }
+
+        setLastResult((s) => (s || '') + `\nStarting lottery...`);
+        
+
+        // fetch winners view
+
+      } catch (e) {
+        console.error('chain sequence failed', e);
+        setLastResult((s) => (s || '') + `\nChain failed: ${String(e)}`);
+      }
+    })();
   }
 
   return (
@@ -145,6 +203,17 @@ export default function LotteryPage() {
       <section className="summary">
         <strong>总录入 NFT 数量</strong>
         <div className="big-number">{totalNFTs}</div>
+      </section>
+
+      <section className="participants">
+        <h2>参与者地址（可选，换行或逗号分隔）</h2>
+        <textarea
+          rows={4}
+          value={participantsText}
+          onChange={(e) => setParticipantsText(e.target.value)}
+          placeholder="每行一个地址，或用逗号/分号分隔"
+          style={{ width: '100%' }}
+        />
       </section>
 
       <section className="inputs">
@@ -185,7 +254,7 @@ export default function LotteryPage() {
       <section className="lottery-config">
         <h2>创建抽奖</h2>
         <div className="field">
-          <label>抽奖 NFT 总数:</label>
+          <label>当前抽奖轮数:</label>
           <input
             type="number"
             min={1}
@@ -198,12 +267,14 @@ export default function LotteryPage() {
           <input
             type="number"
             min={1}
-            value={winnerCount}
+            value={1}
             onChange={(e) => setWinnerCount(Number(e.target.value))}
           />
         </div>
         <div className="field">
-          <button onClick={handleCreateLottery} className="btn primary">创建抽奖</button>
+          <button onClick={async()=>{
+            handleCreateLottery(raffleCount)
+          }} className="btn primary">创建抽奖</button>
         </div>
       </section>
 
