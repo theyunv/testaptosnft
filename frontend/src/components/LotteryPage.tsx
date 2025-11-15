@@ -19,7 +19,7 @@ export default function LotteryPage() {
   async function get_(address: string, index: string) {
     return await aptosClient.view({
       payload: {
-        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::get_lottery_winners",
+        function: "b8bc4704f1e35ba20ecbc03c5bd54d9425cf32853f6251dd718bfc75e0b9e6c3::my_first_nft::get_lottery_winners",
         typeArguments: [],
         functionArguments: [
           address,
@@ -49,7 +49,7 @@ export default function LotteryPage() {
     const txn = await aptosClient.transaction.build.simple({
       sender: account.accountAddress,
       data: {
-        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::create_lottery_activity",
+        function: "b8bc4704f1e35ba20ecbc03c5bd54d9425cf32853f6251dd718bfc75e0b9e6c3::my_first_nft::create_lottery_activity",
         typeArguments: [],
         // title, description, total_winners
         functionArguments: ["frontend-created", "created by frontend", "1"]
@@ -62,7 +62,7 @@ export default function LotteryPage() {
     const txn = await aptosClient.transaction.build.simple({
       sender: account.accountAddress,
       data: {
-        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::join_lottery_activity",
+        function: "b8bc4704f1e35ba20ecbc03c5bd54d9425cf32853f6251dd718bfc75e0b9e6c3::my_first_nft::join_lottery_activity",
         typeArguments: [],
         functionArguments: [account.accountAddress, "1"]
       }
@@ -74,7 +74,7 @@ export default function LotteryPage() {
     const txn = await aptosClient.transaction.build.simple({
       sender: account.accountAddress,
       data: {
-        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::start_lottery",
+        function: "b8bc4704f1e35ba20ecbc03c5bd54d9425cf32853f6251dd718bfc75e0b9e6c3::my_first_nft::start_lottery",
         typeArguments: [],
         functionArguments: [index.toString()]
       }
