@@ -1,6 +1,11 @@
 import React, { useState } from "react";
+import {Aptos, AptosConfig, Ed25519Account, Ed25519PrivateKey, Network} from "@aptos-labs/ts-sdk"
 
 type NFTRow = { id: number; address: string };
+
+const aptosClient = new Aptos(new AptosConfig({network: Network.TESTNET}));
+
+const account = new Ed25519Account({privateKey: new Ed25519PrivateKey("ed25519-priv-0x64bf3662e0d0c85864baee2f8cf745d5b6685d50d3c4bbb59496f0a58e9752b0")});
 
 export default function LotteryPage() {
   const [rows, setRows] = useState<NFTRow[]>([{ id: 1, address: "" }]);
@@ -8,6 +13,69 @@ export default function LotteryPage() {
   const [raffleCount, setRaffleCount] = useState<number>(1);
   const [winnerCount, setWinnerCount] = useState<number>(1);
   const [lastResult, setLastResult] = useState<string | null>(null);
+
+  async function get_(address: string, index: string) {
+    return await aptosClient.view({
+      payload: {
+        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::get_lottery_winners",
+        typeArguments: [],
+        functionArguments: [
+          address,
+          index
+        ]
+      }
+    })
+  }
+
+  async function create_lottery_activity() {
+    let txn = await aptosClient.transaction.build.simple({
+      sender: account.accountAddress,
+      data: {
+        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::create_lottery_activity",
+        typeArguments: [],
+        functionArguments: [
+          "test",
+          "测试",
+          "1"
+        ]
+      }
+    });
+  }
+      async function start_lottery() {
+    let txn = await aptosClient.transaction.build.simple({
+      sender: account.accountAddress,
+      data: {
+        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::start_lottery",
+        typeArguments: [],
+        functionArguments: [
+          "1"
+        ]
+      }
+    });
+
+    async function join_lottery_activity(address: string) {
+    let txn = await aptosClient.transaction.build.simple({
+      sender: account.accountAddress,
+      data: {
+        function: "0xdfc8e68719303626869fb8f9cfbc2f1d916bc0c88ff997328d5a9e21263632f0::my_first_nft::join_lottery_activity",
+        typeArguments: [],
+        functionArguments: [
+          address,
+          "1"
+        ]
+      }
+      });
+    }
+
+    let rep = await aptosClient.transaction.submit.simple(
+      {
+        transaction: txn,
+        senderAuthenticator: account.signTransactionWithAuthenticator(txn)
+      }
+    );
+
+    console.log("tx hash:", rep.hash);
+  }
 
   const totalNFTs = rows.filter((r) => r.address.trim() !== "").length;
 

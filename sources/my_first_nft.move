@@ -216,17 +216,6 @@ module my_first_nft::my_first_nft {
         });
     }
 
-    /// 检查用户是否已注册
-    /// 
-    /// 参数:
-    /// - user_addr: 要检查的用户地址
-    /// 
-    /// 返回:
-    /// - bool: 用户是否已注册
-    public fun is_user_registered(user_addr: address): bool {
-        exists<UserAccount>(user_addr)
-    }
-
     /// ========== 抽奖活动管理函数 ==========
 
     /// 创建新的抽奖活动
@@ -486,10 +475,10 @@ module my_first_nft::my_first_nft {
         let collection_cref =
             collection::create_unlimited_collection(
                 collection_creator_signer,
-                CollectionDescription,
-                CollectionName,
+                string::utf8(CollectionDescription),
+                string::utf8(CollectionName),
                 option::some(royalty::create(5, 100, signer::address_of(sender))),
-                CollectionURI
+                string::utf8(CollectionURI)
             );
 
         // 从集合对象生成签名者
@@ -523,7 +512,7 @@ module my_first_nft::my_first_nft {
             );
         
         // 初始化代币 URI 为基础 URI
-        let url = TokenURI;
+        let url = string::utf8(TokenURI);
 
         // 创建编号代币（numbered token）
         // 参数说明：
@@ -537,9 +526,9 @@ module my_first_nft::my_first_nft {
         let nft_cref =
             &token::create_numbered_token(
                 collection_creator_signer,
-                CollectionName,
-                CollectionDescription,
-                TokenPrefix,
+                string::utf8(CollectionName),
+                string::utf8(CollectionDescription),
+                string::utf8(TokenPrefix),
                 string::utf8(b""),
                 option::none(),
                 string::utf8(b"")
@@ -645,7 +634,7 @@ module my_first_nft::my_first_nft {
         object::address_to_object(
             collection::create_collection_address(
                 &get_collection_creator_address(),
-                &CollectionName
+                &string::utf8(CollectionName)
             )
         )
     }
@@ -687,9 +676,10 @@ module my_first_nft::my_first_nft {
     /// 返回:
     /// - vector<address>: 中奖者地址列表
     #[view]
-    public fun get_lottery_winners(admin: address, activity_id: u64): vector<address> {
-        assert!(exists<LotteryActivity>(admin), ERROR_LOTTERY_NOT_EXISTS);
-        let activity = borrow_global<LotteryActivity>(admin);
+    public fun get_lottery_winners(admin: &signer, activity_id: u64): vector<address> {
+        let admin_addr = signer::address_of(admin);
+        assert!(exists<LotteryActivity>(admin_addr), ERROR_LOTTERY_NOT_EXISTS);
+        let activity = borrow_global<LotteryActivity>(admin_addr);
         assert!(activity.activity_id == activity_id, ERROR_LOTTERY_NOT_EXISTS);
         activity.winners
     }
